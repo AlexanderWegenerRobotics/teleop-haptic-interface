@@ -31,9 +31,11 @@ public:
     // Inform the avatar of our current state (stamped on heartbeat replies)
     void setLocalState(SysState state);
 
-    bool isAlive() const;
-    void resetAliveTimer();
+    bool      isAlive()        const;
+    void      resetAliveTimer();
+    SysState  getRemoteState() const { return remote_state_.load(); }
 
 private:
-    UdpReliable channel_;
+    UdpReliable             channel_;
+    std::atomic<SysState>   remote_state_{SysState::OFFLINE};
 };

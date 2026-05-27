@@ -24,8 +24,7 @@ bool SigmaDevice::open() {
     dhdSetBrakes(DHD_OFF, device_id_);
     dhdEnableForce(DHD_OFF, device_id_);
 
-    std::cout << "[SigmaDevice:" << device_id_
-              << "] Opened: " << dhdGetSystemName(device_id_) << "\n";
+    std::cout << "[SigmaDevice:" << device_id_ << "] Opened: " << dhdGetSystemName(device_id_) << "\n";
     return true;
 }
 

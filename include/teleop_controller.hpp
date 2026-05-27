@@ -1,11 +1,5 @@
 #pragma once
 
-// ─── teleop_controller.hpp ────────────────────────────────────────────────────
-// Per-arm teleoperation controller.
-// Owns one IHapticDevice + one IArmChannel and runs the haptic control loop.
-// Implemented in Step 2 of the build plan.
-// ─────────────────────────────────────────────────────────────────────────────
-
 #include "haptic_device.hpp"
 #include "arm_channel.hpp"
 #include "passivity_controller.hpp"
@@ -19,22 +13,16 @@
 #include <mutex>
 #include <string>
 
-// Log entry written at haptic control rate
 struct ControlLogEntry {
-    double time;
-    // Device state (device frame)
-    float  dev_px, dev_py, dev_pz;
-    float  dev_vx, dev_vy, dev_vz;
-    // Arm state (world frame)
-    float  arm_px, arm_py, arm_pz;
-    // Forces (device frame)
-    float  f_impedance_x, f_impedance_y, f_impedance_z;
-    float  f_passivity_x, f_passivity_y, f_passivity_z;
-    float  f_total_x,     f_total_y,     f_total_z;
-    // Passivity diagnostics
-    float  e_obs;
-    float  b_linear;
-    // State
+    double  time;
+    float   dev_px, dev_py, dev_pz;
+    float   dev_vx, dev_vy, dev_vz;
+    float   arm_px, arm_py, arm_pz;
+    float   f_impedance_x, f_impedance_y, f_impedance_z;
+    float   f_passivity_x, f_passivity_y, f_passivity_z;
+    float   f_total_x,     f_total_y,     f_total_z;
+    float   e_obs;
+    float   b_linear;
     uint8_t sys_state;
 };
 
@@ -69,38 +57,29 @@ static inline std::string controlLogRow(const ControlLogEntry& e) {
     return buf;
 }
 
-// ─── TeleopController ─────────────────────────────────────────────────────────
-
 class TeleopController {
 public:
     TeleopController(IHapticDevice* device,
                      IArmChannel*   arm,
                      const YAML::Node& haptic_config,
                      const std::string& log_dir);
-
     ~TeleopController();
 
-    // Start/stop the 1 kHz haptic control thread
     void start();
     void stop();
 
-    // Called by TeleopSession to engage or disengage teleoperation.
-    // captureOrigin() should be called once the device is at its neutral pose.
+    // Snapshot current device + arm pose as the zero-error reference.
     void captureOrigin();
     void setEngaged(bool engaged);
     bool isEngaged() const { return engaged_; }
 
-    // Pass a new log path for the next episode
     void restartLogger(const std::string& path);
 
 private:
     void runControlLoop();
 
-    // Coordinate transform: device frame → world frame (position + velocity)
     Eigen::Vector3d toWorld(const Eigen::Vector3d& v_device) const;
-    // Delta pose computation: sigma pose relative to captured origin → command
     ArmCommand computeCommand(const HapticState& device_state) const;
-    // Haptic force: position error + passivity correction
     Eigen::Matrix<double,6,1> computeHapticWrench(
         const HapticState& device_state,
         const ArmState&    arm_state,
@@ -110,30 +89,30 @@ private:
     IArmChannel*   arm_;
 
     // Config
-    Eigen::Matrix3d R_device_to_world_;
-    double          motion_scaling_;
+    Eigen::Matrix3d           R_device_to_world_;
+    double                    motion_scaling_;
     Eigen::Matrix<double,6,1> stiffness_;
     Eigen::Matrix<double,6,1> damping_;
-    double max_force_;
-    double max_torque_;
-    double max_force_rate_;
-    double max_torque_rate_;
+    double max_force_, max_torque_, max_force_rate_, max_torque_rate_;
 
-    // State
+    // Origin — haptic device pose and arm pose at capture time
+    std::mutex         origin_mtx_;
+    HapticState        origin_;
+    Eigen::Vector3d    arm_origin_pos_{Eigen::Vector3d::Zero()};
+    Eigen::Quaterniond arm_origin_ori_{Eigen::Quaterniond::Identity()};
+    bool               has_origin_ = false;
+
     std::atomic<bool> running_{false};
     std::atomic<bool> engaged_{false};
     std::thread       thread_;
-    std::mutex        origin_mtx_;
-    HapticState       origin_;
-    bool              has_origin_ = false;
 
-    // Passivity
-    PassivityController passivity_;
-
-    // Previous force for rate limiting
+    PassivityController       passivity_;
     Eigen::Matrix<double,6,1> F_prev_;
 
-    // Logging
+    // Last breakdown for logging (set inside computeHapticWrench)
+    Eigen::Matrix<double,6,1> F_impedance_log_{Eigen::Matrix<double,6,1>::Zero()};
+    Eigen::Matrix<double,6,1> F_pc_log_{Eigen::Matrix<double,6,1>::Zero()};
+
     std::string log_dir_;
     std::chrono::high_resolution_clock::time_point start_time_;
     DataLogger<ControlLogEntry> logger_;

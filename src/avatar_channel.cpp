@@ -14,11 +14,11 @@ AvatarChannel::AvatarChannel(const AvatarChannelConfig& cfg)
         return rc;
     }())
 {
-    // Handle heartbeat from avatar
+    // Handle heartbeat — update remote state from envelope
     channel_.registerHandler("heartbeat",
-        [](const ReliableEnvelope& env, const msgpack::object& payload) {
-            (void)env; (void)payload;
-            // Could log uptime here if needed
+        [this](const ReliableEnvelope& env, const msgpack::object& payload) {
+            (void)payload;
+            remote_state_.store(static_cast<SysState>(env.state));
         });
 
     // Handle device events (recovery complete, etc.)

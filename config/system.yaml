@@ -13,6 +13,7 @@
 
 session:
   log_dir: "log"
+  mock_motion: false   # set true to use MockHapticDevice (sine wave on X, no sigma needed)
 
 # ─── Avatar command channel (UdpReliable / msgpack) ───────────────────────────
 # Used for state transitions: IDLE → HOMING → AWAITING → ENGAGED etc.

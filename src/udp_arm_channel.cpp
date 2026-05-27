@@ -42,14 +42,9 @@ void UdpArmChannel::sendCommand(const ArmCommand& cmd) {
 
 ArmState UdpArmChannel::getState() {
     ArmStateMsg msg = stream_.getRecvData();
-    last_state_.position    = Eigen::Vector3d(msg.position[0],
-                                               msg.position[1],
-                                               msg.position[2]);
+    last_state_.position    = Eigen::Vector3d(msg.position[0], msg.position[1], msg.position[2]);
     // Quaternion from avatar: [w, x, y, z]
-    last_state_.orientation = Eigen::Quaterniond(msg.quaternion[0],
-                                                   msg.quaternion[1],
-                                                   msg.quaternion[2],
-                                                   msg.quaternion[3]);
+    last_state_.orientation = Eigen::Quaterniond(msg.quaternion[0], msg.quaternion[1], msg.quaternion[2], msg.quaternion[3]);
     last_state_.orientation.normalize();
     last_state_.is_recovering = (msg.recovering != 0);
     last_state_.is_valid      = isAlive();

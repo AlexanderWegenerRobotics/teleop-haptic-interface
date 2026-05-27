@@ -77,7 +77,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Poco::Foundation
     Poco::Net
     yaml-cpp::yaml-cpp
-    msgpackc-cxx
+    msgpack-cxx              # INTERFACE IMPORTED — adds includes + MSGPACK_NO_BOOST define, no .lib
 )
 
 if(WITH_SIGMA)
