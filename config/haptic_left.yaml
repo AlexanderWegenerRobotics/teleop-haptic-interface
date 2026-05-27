@@ -1,0 +1,47 @@
+# ─── haptic_left.yaml ─────────────────────────────────────────────────────────
+# Configuration for the LEFT Sigma 7 haptic device.
+
+# DHD device ID (0-based index; dual-rack: left=0, right=1 — verify on your rack)
+device_id: 0
+
+# ─── Frame transformation ─────────────────────────────────────────────────────
+# Rotation matrix R_device_to_world: transforms a vector expressed in the
+# Sigma 7 device frame into the avatar world frame (X=forward, Y=left, Z=up).
+#
+# Sigma 7 convention (DHD SDK): X points backwards (away from workspace),
+# Y points right, Z points up.
+# Avatar world convention:       X=forward, Y=left, Z=up.
+#
+# Mapping: x_world = -x_sigma, y_world = -y_sigma, z_world = z_sigma
+# i.e. R = diag(-1, -1, 1)
+# TUNE THIS DURING PHYSICAL SETUP — edit the matrix rows (each row is a world-frame
+# unit vector corresponding to device X, Y, Z axes respectively).
+frame_rotation:
+  - [-1,  0,  0]   # device X → world (-X)
+  - [ 0, -1,  0]   # device Y → world (-Y)
+  - [ 0,  0,  1]   # device Z → world (+Z)
+
+# ─── Motion scaling ───────────────────────────────────────────────────────────
+# Sigma workspace (approx ±0.1 m) is multiplied by this factor before sending
+# to the robot. 4.0 maps ±0.1 m sigma motion to ±0.4 m robot motion.
+motion_scaling: 4.0
+
+# ─── Haptic feedback control (operation mode) ─────────────────────────────────
+# Impedance parameters used when rendering position error from robot state.
+# Format: [Fx, Fy, Fz, Tx, Ty, Tz]
+control:
+  stiffness: [50.0, 50.0, 50.0, 0.03, 0.03, 0.03]   # N/m, Nm/rad
+  damping:   [ 7.0,  7.0,  7.0, 0.03, 0.03, 0.03]   # Ns/m, Nms/rad
+
+# ─── Passivity controller ─────────────────────────────────────────────────────
+passivity:
+  # Maximum variable damping coefficient the passivity controller may inject.
+  # Higher = more aggressive correction, but can feel stiff to operator.
+  max_damping_gain: 50.0    # Ns/m
+
+# ─── Safety limits ────────────────────────────────────────────────────────────
+safety:
+  max_force:       12.0   # N   — absolute cap on rendered force magnitude
+  max_torque:       0.5   # Nm  — absolute cap on rendered torque magnitude
+  max_force_rate:  500.0  # N/s — rate-of-change limit (prevents spikes)
+  max_torque_rate:  20.0  # Nm/s
