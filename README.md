@@ -99,6 +99,8 @@ cmake --build build --config Release
 
 Logs land in `log/` as CSV, one file per arm.
 
+For real hardware: rebuild with `-DWITH_SIGMA=ON` and set `mock_motion: false` in `system.yaml`. Tune `frame_rotation` in `haptic_left.yaml` / `haptic_right.yaml` if the arm moves in the wrong direction on first engage.
+
 ---
 
 ## Testing without hardware

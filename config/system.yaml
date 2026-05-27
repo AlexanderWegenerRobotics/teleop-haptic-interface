@@ -1,6 +1,6 @@
 session:
   log_dir: "log"
-  mock_motion: true    # set true to use MockHapticDevice
+  mock_motion: false    # set true to use MockHapticDevice
   mock_profile: contact_z  # free_x = sine on X (pipeline test) | contact_z = sine on -Z + ±90° pitch (table contact test) | contact_z_down = same with fixed -90° pitch
 
 avatar:
