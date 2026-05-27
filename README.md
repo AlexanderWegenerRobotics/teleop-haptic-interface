@@ -79,7 +79,7 @@ Tune this once real hardware is connected and the arm moves in the wrong directi
 Dependencies via vcpkg: `Eigen3`, `Poco`, `yaml-cpp`, `msgpack-cxx`
 
 ```bash
-cmake -B build -DCMAKE_TOOLCHAIN_FILE=<vcpkg_root>/scripts/buildsystems/vcpkg.cmake -DWITH_SIGMA=OFF
+cmake -B build -DWITH_SIGMA=OFF
 cmake --build build --config Release
 ```
 
