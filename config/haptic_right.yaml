@@ -1,8 +1,3 @@
-# ─── haptic_right.yaml ────────────────────────────────────────────────────────
-# Configuration for the RIGHT Sigma 7 haptic device.
-# Parameters are identical to the left by default; adjust if the physical
-# orientation of the right unit differs.
-
 device_id: 1
 
 frame_rotation:

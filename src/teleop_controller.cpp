@@ -4,14 +4,12 @@
 #include <cmath>
 #include <algorithm>
 
-TeleopController::TeleopController(IHapticDevice* device, IArmChannel* arm,
-                                   const YAML::Node& cfg, const std::string& log_dir)
+TeleopController::TeleopController(IHapticDevice* device, IArmChannel* arm, const YAML::Node& cfg, const std::string& log_dir)
     : device_(device)
     , arm_(arm)
     , log_dir_(log_dir)
     , F_prev_(Eigen::Matrix<double,6,1>::Zero())
-    , logger_(log_dir + "/" + std::string(arm->name()) + "_control.csv",
-              controlLogHeader, controlLogRow)
+    , logger_(log_dir + "/" + std::string(arm->name()) + "_control.csv", controlLogHeader, controlLogRow)
 {
     auto rows = cfg["frame_rotation"].as<std::vector<std::vector<double>>>();
     for (int r = 0; r < 3; ++r)
@@ -61,7 +59,8 @@ void TeleopController::stop() {
 }
 
 void TeleopController::captureOrigin() {
-    // Snapshot both device and arm pose so wrench error is relative to this moment.
+    // Reset device reference point, then snapshot both poses.
+    device_->zero();
     HapticState dev_now = device_->readState();
     ArmState    arm_now = arm_->getState();
     std::lock_guard<std::mutex> lock(origin_mtx_);
@@ -107,6 +106,8 @@ ArmCommand TeleopController::computeCommand(const HapticState& state) const {
     Eigen::Quaterniond q_delta = origin_.orientation.inverse() * state.orientation;
     if (q_delta.w() < 0.0) q_delta.coeffs() *= -1.0;
     Eigen::Quaterniond R_dw(R_device_to_world_);
+    // Send the world-frame delta only — avatar applies its own origin on top,
+    // matching exactly how the VR interface works.
     cmd.orientation    = (R_dw * q_delta * R_dw.inverse()).normalized();
     cmd.gripper_closed = state.gripper_closed;
     return cmd;

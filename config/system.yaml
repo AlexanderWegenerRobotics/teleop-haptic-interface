@@ -1,42 +1,28 @@
-# ─── teleop-haptic-interface / system.yaml ────────────────────────────────────
-# Top-level system configuration.
-# Ports must mirror the avatar's robot_config.yaml (from the avatar's perspective
-# the directions are inverted — see comments below).
-#
-# Avatar port convention (from arm_control perspective):
-#   send_port    = port the ARM sends state TO on this machine
-#   receive_port = port the ARM listens on for commands FROM this machine
-#
-# From our (haptic interface) perspective:
-#   arm.receive_port = port WE bind on  (= avatar send_port)
-#   arm.send_port    = port ARM binds on (= avatar receive_port), we send TO it
-
 session:
   log_dir: "log"
-  mock_motion: false   # set true to use MockHapticDevice (sine wave on X, no sigma needed)
+  mock_motion: true    # set true to use MockHapticDevice
+  mock_profile: contact_z  # free_x = sine on X (pipeline test) | contact_z = sine on -Z + ±90° pitch (table contact test) | contact_z_down = same with fixed -90° pitch
 
-# ─── Avatar command channel (UdpReliable / msgpack) ───────────────────────────
-# Used for state transitions: IDLE → HOMING → AWAITING → ENGAGED etc.
 avatar:
   remote_ip:    "127.0.0.1"
-  send_port:    7000    # avatar listens here  (we send state-change commands)
-  receive_port: 8000    # we listen here       (avatar sends heartbeat/events)
+  send_port:    7000    # avatar listens here
+  receive_port: 8000    # we listen here
   frequency:    20
 
-# ─── Per-arm device entries ───────────────────────────────────────────────────
+# ------ Per-arm device entries ------
 devices:
   - side: left
     haptic_config: "config/haptic_left.yaml"
     arm:
       remote_ip:    "127.0.0.1"
-      send_port:    7001    # arm_left listens here (we send ArmCommandMsg)
-      receive_port: 8001    # we listen here        (arm_left sends ArmStateMsg)
-      frequency:    200     # Hz — must match avatar robot_config frequency
+      send_port:    7001
+      receive_port: 8001
+      frequency:    200
 
   - side: right
     haptic_config: "config/haptic_right.yaml"
     arm:
       remote_ip:    "127.0.0.1"
-      send_port:    7002    # arm_right listens here
-      receive_port: 8002    # we listen here
+      send_port:    7002
+      receive_port: 8002
       frequency:    200

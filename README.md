@@ -103,6 +103,48 @@ Logs land in `log/` as CSV, one file per arm.
 
 ## Testing without hardware
 
-Set `session.mock_motion: true` in `system.yaml`. The mock device generates ±20 mm sinusoidal motion on X at 0.1 Hz. With zero network latency the passivity controller should stay dormant (`f_pc ≈ 0`, `e_obs ≤ 0`). This has been verified.
+Set `session.mock_motion: true` and `mock_profile: contact_z` in `system.yaml`. The `contact_z` profile drives both arms through ±320 mm sinusoidal motion on the world Z axis (toward the table) at 0.05 Hz, simultaneously sweeping ±90° of pitch — a simulated downward grasp approach.
 
-The arm tracking end-to-end (sim actually following commands) is pending a state-machine alignment with the avatar side — the sim expects a HOMING → AWAITING handshake before it will execute ENGAGED commands.
+Available profiles:
+
+| `mock_profile` | Motion |
+|---|---|
+| `free_x` | ±80 mm sine on X — baseline passivity test |
+| `contact_z` | ±320 mm on Z + ±90° pitch sweep — table contact test |
+| `contact_z_down` | ±320 mm on Z + fixed −90° pitch — EE-down approach test |
+
+After running, generate plots with:
+
+```bash
+# sigma-side only
+python tests/plot_control.py log
+
+# sigma + avatar side (pass the episode folder from the avatar's log output)
+python tests/plot_control.py log logs/000
+```
+
+PNGs are saved to `docs/`.
+
+---
+
+## Validation results
+
+All plots are from a `contact_z` run: ±320 mm Z-sweep at 0.05 Hz with simultaneous ±90° pitch sweep, mock motion, no real hardware.
+
+### Haptic interface — sigma side
+
+Row 1: EE z position tracking vs commanded target, safety floor at 0.562 m.
+Row 2: Impedance force and total haptic wrench rendered to the operator.
+Row 3: Passivity energy observation and injected damping. `e_obs < 0` and `b_linear = 0` confirms the loop is passive under simulated contact motion.
+
+![Haptic interface control log](docs/control_plot.png)
+
+### Robot response — avatar side
+
+Per-arm plots in world frame. Rows: EE position xyz (actual vs cmd), EE orientation quaternion (actual vs cmd), estimated external force `O_F_ext_hat_K` [N], estimated external torque [Nm], controller state.
+
+Position and orientation tracking are tight on both arms. External forces on the left arm peak at ~60 N on the z-component at the lowest point of each cycle — this is the table-contact signal and the primary candidate for adding contact feedback to the haptic wrench.
+
+![Avatar left arm log](docs/arm_left.png)
+
+![Avatar right arm log](docs/arm_right.png)

@@ -1,15 +1,14 @@
 #pragma once
 
-// ─── avatar_channel.hpp ───────────────────────────────────────────────────────
 // Thin wrapper around UdpReliable for the avatar command channel.
-// Handles state-change commands and heartbeat/device-event reception.
-// ─────────────────────────────────────────────────────────────────────────────
 
 #include "network/udp_reliable.hpp"
 #include "network/common.hpp"
 #include <string>
 #include <functional>
 #include <atomic>
+#include <thread>
+#include <chrono>
 
 struct AvatarChannelConfig {
     std::string remote_ip;
@@ -25,10 +24,7 @@ public:
     void start();
     void stop();
 
-    // Send a state-change request to the avatar (HOMING, ENGAGED, IDLE …)
     void requestState(SysState state);
-
-    // Inform the avatar of our current state (stamped on heartbeat replies)
     void setLocalState(SysState state);
 
     bool      isAlive()        const;
@@ -36,6 +32,11 @@ public:
     SysState  getRemoteState() const { return remote_state_.load(); }
 
 private:
+    void heartbeatLoop();
+
     UdpReliable             channel_;
     std::atomic<SysState>   remote_state_{SysState::OFFLINE};
+    std::atomic<bool>       running_{false};
+    std::thread             heartbeat_thread_;
+    std::chrono::steady_clock::time_point start_time_;
 };

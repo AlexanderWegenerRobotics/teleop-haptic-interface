@@ -1,6 +1,7 @@
 #include "avatar_channel.hpp"
 #include <iostream>
 #include <map>
+#include <cstdint>
 
 AvatarChannel::AvatarChannel(const AvatarChannelConfig& cfg)
     : channel_([&] {
@@ -37,12 +38,29 @@ AvatarChannel::AvatarChannel(const AvatarChannelConfig& cfg)
 }
 
 void AvatarChannel::start() {
+    start_time_ = std::chrono::steady_clock::now();
     channel_.resetAliveTimer();
     channel_.start();
+    running_ = true;
+    heartbeat_thread_ = std::thread(&AvatarChannel::heartbeatLoop, this);
 }
 
 void AvatarChannel::stop() {
+    running_ = false;
+    if (heartbeat_thread_.joinable()) heartbeat_thread_.join();
     channel_.stop();
+}
+
+void AvatarChannel::heartbeatLoop() {
+    // Send heartbeat every 500 ms so the avatar's alive-timer doesn't expire.
+    while (running_) {
+        int64_t uptime_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start_time_).count();
+        msgpack::sbuffer buf;
+        msgpack::pack(buf, std::map<std::string, int64_t>{{"uptime_ms", uptime_ms}});
+        channel_.send("heartbeat", buf, false);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
 }
 
 void AvatarChannel::requestState(SysState state) {

@@ -14,8 +14,7 @@ SigmaDevice::SigmaDevice(int device_id)
 
 bool SigmaDevice::open() {
     if (dhdOpenID(device_id_) < 0) {
-        std::cerr << "[SigmaDevice:" << device_id_
-                  << "] Failed to open: " << dhdErrorGetLastStr() << "\n";
+        std::cerr << "[SigmaDevice:" << device_id_ << "] Failed to open: " << dhdErrorGetLastStr() << "\n";
         return false;
     }
     connected_ = true;
@@ -80,22 +79,16 @@ HapticState SigmaDevice::readState() {
     return s;
 }
 
-void SigmaDevice::setForce(const Eigen::Vector3d& force,
-                            const Eigen::Vector3d& torque) {
+void SigmaDevice::setForce(const Eigen::Vector3d& force, const Eigen::Vector3d& torque) {
     if (!connected_ || !force_enabled_) return;
-    dhdSetForceAndTorqueAndGripperForce(
-        force.x(), force.y(), force.z(),
-        torque.x(), torque.y(), torque.z(),
-        0.0,  // gripper force — not used
-        device_id_);
+    dhdSetForceAndTorqueAndGripperForce(force.x(), force.y(), force.z(), torque.x(), torque.y(), torque.z(), 0.0, device_id_);
 }
 
 void SigmaDevice::enableForce(bool enable) {
     if (!connected_) return;
     if (enable) {
         // Always zero before enabling to avoid jumps
-        dhdSetForceAndTorqueAndGripperForce(
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, device_id_);
+        dhdSetForceAndTorqueAndGripperForce(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, device_id_);
         dhdEnableForce(DHD_ON, device_id_);
     } else {
         dhdEnableForce(DHD_OFF, device_id_);
@@ -105,8 +98,7 @@ void SigmaDevice::enableForce(bool enable) {
 
 void SigmaDevice::zero() {
     if (!connected_) return;
-    dhdSetForceAndTorqueAndGripperForce(
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, device_id_);
+    dhdSetForceAndTorqueAndGripperForce(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, device_id_);
 }
 
 #endif // WITH_SIGMA

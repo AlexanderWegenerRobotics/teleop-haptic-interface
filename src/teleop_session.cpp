@@ -89,8 +89,12 @@ TeleopSession::TeleopSession(const std::string& system_config_path) {
         haptic = std::make_unique<SigmaDevice>(device_id);
 #else
         if (mock_motion) {
-            haptic = std::make_unique<MockHapticDevice>(device_id);
-            std::cout << "[TeleopSession] Using MockHapticDevice for " << side << "\n";
+            std::string profile_str = sys["session"]["mock_profile"].as<std::string>("free_x");
+            MockProfile profile = MockProfile::FREE_X;
+            if      (profile_str == "contact_z")      profile = MockProfile::CONTACT_Z;
+            else if (profile_str == "contact_z_down") profile = MockProfile::CONTACT_Z_DOWN;
+            haptic = std::make_unique<MockHapticDevice>(device_id, profile);
+            std::cout << "[TeleopSession] Using MockHapticDevice for " << side << " (profile: " << profile_str << ")\n";
         } else {
             haptic = std::make_unique<NullHapticDevice>(device_id);
             std::cout << "[TeleopSession] Using NullHapticDevice for " << side << "\n";
@@ -115,7 +119,7 @@ void TeleopSession::run() {
     avatar_channel_->setLocalState(state_);
 
     std::cout << "[TeleopSession] Running.\n"
-              << "  SPACE  - capture origin and engage\n"
+              << "  SPACE  - home then engage\n"
               << "  ESC    - disengage\n"
               << "  Ctrl-C - quit\n";
 
@@ -142,9 +146,33 @@ void TeleopSession::stop() {
 
 void TeleopSession::updateStateMachine() {
     int key = pollKey();
+    SysState remote = avatar_channel_->getRemoteState();
+    bool avatar_stopped = (remote == SysState::FAULT || remote == SysState::STOP || remote == SysState::OFFLINE);
+
+    if (key == 27 || key == 'q') {
+        // ESC / q always returns to IDLE regardless of current state
+        requestAllDevices(SysState::IDLE);
+        state_ = SysState::IDLE;
+        avatar_channel_->setLocalState(state_);
+        avatar_channel_->requestState(SysState::IDLE);
+        std::cout << "[TeleopSession] IDLE\n";
+        return;
+    }
 
     if (state_ == SysState::IDLE) {
         if (key == ' ') {
+            state_ = SysState::HOMING;
+            avatar_channel_->setLocalState(state_);
+            avatar_channel_->requestState(SysState::HOMING);
+            std::cout << "[TeleopSession] HOMING requested — waiting for avatar...\n";
+        }
+    } else if (state_ == SysState::HOMING) {
+        if (avatar_stopped) {
+            state_ = SysState::IDLE;
+            avatar_channel_->setLocalState(state_);
+            std::cout << "[TeleopSession] IDLE (avatar fault during homing)\n";
+        } else if (remote == SysState::AWAITING) {
+            // Arms have finished homing; capture origins and engage
             for (auto& ctrl : controllers_) ctrl->captureOrigin();
             requestAllDevices(SysState::ENGAGED);
             state_ = SysState::ENGAGED;
@@ -153,16 +181,12 @@ void TeleopSession::updateStateMachine() {
             std::cout << "[TeleopSession] ENGAGED\n";
         }
     } else if (state_ == SysState::ENGAGED) {
-        // Disengage on ESC, 'q', or if the avatar signals a fault/stop
-        SysState remote = avatar_channel_->getRemoteState();
-        bool avatar_stopped = (remote == SysState::FAULT  || remote == SysState::STOP   || remote == SysState::OFFLINE);
-
-        if (key == 27 || key == 'q' || avatar_stopped) {
+        if (avatar_stopped) {
             requestAllDevices(SysState::IDLE);
             state_ = SysState::IDLE;
             avatar_channel_->setLocalState(state_);
             avatar_channel_->requestState(SysState::IDLE);
-            std::cout << "[TeleopSession] IDLE" << (avatar_stopped ? " (avatar triggered)" : "") << "\n";
+            std::cout << "[TeleopSession] IDLE (avatar triggered)\n";
         }
     }
 }
