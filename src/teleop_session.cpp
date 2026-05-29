@@ -147,7 +147,9 @@ void TeleopSession::stop() {
 void TeleopSession::updateStateMachine() {
     int key = pollKey();
     SysState remote = avatar_channel_->getRemoteState();
-    bool avatar_stopped = (remote == SysState::FAULT || remote == SysState::STOP || remote == SysState::OFFLINE);
+
+    bool avatar_stopped = (remote == SysState::FAULT || remote == SysState::STOP) ||
+                          (remote == SysState::OFFLINE && !avatar_channel_->isAlive());
 
     if (key == 27 || key == 'q') {
         // ESC / q always returns to IDLE regardless of current state
