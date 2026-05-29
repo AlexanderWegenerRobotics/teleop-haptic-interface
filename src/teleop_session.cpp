@@ -169,11 +169,9 @@ void TeleopSession::updateStateMachine() {
             std::cout << "[TeleopSession] HOMING requested — waiting for avatar...\n";
         }
     } else if (state_ == SysState::HOMING) {
-        if (avatar_stopped) {
-            state_ = SysState::IDLE;
-            avatar_channel_->setLocalState(state_);
-            std::cout << "[TeleopSession] IDLE (avatar fault during homing)\n";
-        } else if (remote == SysState::AWAITING) {
+        std::cout << "[TeleopSession] HOMING — remote state: " << sysStateStr(remote)
+                  << " alive=" << avatar_channel_->isAlive() << "\n";
+        if (remote == SysState::AWAITING) {
             // Arms have finished homing; capture origins and engage
             for (auto& ctrl : controllers_) ctrl->captureOrigin();
             requestAllDevices(SysState::ENGAGED);
