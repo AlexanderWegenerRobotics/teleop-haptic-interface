@@ -59,8 +59,8 @@ static inline std::string controlLogRow(const ControlLogEntry& e) {
 
 class TeleopController {
 public:
-    TeleopController(IHapticDevice* device,
-                     IArmChannel*   arm,
+    TeleopController(std::unique_ptr<IHapticDevice> device,
+                     std::unique_ptr<IArmChannel>   arm,
                      const YAML::Node& haptic_config,
                      const std::string& log_dir);
     ~TeleopController();
@@ -85,8 +85,8 @@ private:
         const ArmState&    arm_state,
         double dt);
 
-    IHapticDevice* device_;
-    IArmChannel*   arm_;
+    std::unique_ptr<IHapticDevice> device_;
+    std::unique_ptr<IArmChannel>   arm_;
 
     // Config
     Eigen::Matrix3d           R_device_to_world_;

@@ -17,7 +17,7 @@ devices:
       remote_ip:    "127.0.0.1"
       send_port:    7001
       receive_port: 8001
-      frequency:    200
+      frequency:    500
 
   - side: right
     haptic_config: "config/haptic_right.yaml"
@@ -25,4 +25,4 @@ devices:
       remote_ip:    "127.0.0.1"
       send_port:    7002
       receive_port: 8002
-      frequency:    200
+      frequency:    500

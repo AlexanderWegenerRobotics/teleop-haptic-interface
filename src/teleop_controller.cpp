@@ -4,12 +4,12 @@
 #include <cmath>
 #include <algorithm>
 
-TeleopController::TeleopController(IHapticDevice* device, IArmChannel* arm, const YAML::Node& cfg, const std::string& log_dir)
-    : device_(device)
-    , arm_(arm)
+TeleopController::TeleopController(std::unique_ptr<IHapticDevice> device, std::unique_ptr<IArmChannel> arm, const YAML::Node& cfg, const std::string& log_dir)
+    : device_(std::move(device))
+    , arm_(std::move(arm))
     , log_dir_(log_dir)
     , F_prev_(Eigen::Matrix<double,6,1>::Zero())
-    , logger_(log_dir + "/" + std::string(arm->name()) + "_control.csv", controlLogHeader, controlLogRow)
+    , logger_(log_dir + "/" + std::string(arm_->name()) + "_control.csv", controlLogHeader, controlLogRow)
 {
     auto rows = cfg["frame_rotation"].as<std::vector<std::vector<double>>>();
     for (int r = 0; r < 3; ++r)
@@ -127,7 +127,9 @@ Eigen::Matrix<double,6,1> TeleopController::computeHapticWrench(
     Eigen::Quaterniond q_dev_delta = origin_.orientation.inverse() * device_state.orientation;
     if (q_dev_delta.w() < 0.0) q_dev_delta.coeffs() *= -1.0;
     Eigen::Quaterniond R_dw(R_device_to_world_);
-    Eigen::Quaterniond q_cmd_world = (arm_origin_ori_ * R_dw * q_dev_delta * R_dw.inverse()).normalized();
+    //Eigen::Quaterniond q_cmd_world = (arm_origin_ori_ * R_dw * q_dev_delta * R_dw.inverse()).normalized();
+    Eigen::Quaterniond q_cmd = (R_dw * q_dev_delta * R_dw.inverse()).normalized();
+    Eigen::Quaterniond q_cmd_world = (q_cmd * arm_origin_ori_).normalized();
     if (q_cmd_world.dot(arm_state.orientation) < 0.0) q_cmd_world.coeffs() *= -1.0;
     Eigen::Quaterniond q_err = q_cmd_world.inverse() * arm_state.orientation;
     if (q_err.w() < 0.0) q_err.coeffs() *= -1.0;

@@ -102,7 +102,7 @@ TeleopSession::TeleopSession(const std::string& system_config_path) {
 #endif
 
         controllers_.push_back(std::make_unique<TeleopController>(
-            haptic.release(), arm.release(), hcfg, log_dir_));
+            std::move(haptic), std::move(arm), hcfg, log_dir_));
     }
 }
 
