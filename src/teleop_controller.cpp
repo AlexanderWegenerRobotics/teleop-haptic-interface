@@ -194,10 +194,13 @@ void TeleopController::runControlLoop() {
         if (engaged_ && has_origin_) {
             arm_->sendCommand(computeCommand(dev));
 
+            std::cout << "Arm pos: " << dev.position.transpose() << std::endl;
+
             ArmState arm = arm_->getState();
             Eigen::Matrix<double,6,1> F = Eigen::Matrix<double,6,1>::Zero();
             if (arm.is_valid)
                 F = computeHapticWrench(dev, arm, dt);
+                std::cout << "Arm is valid with force " << F.transpose() << std::endl;
 
             device_->setForce(F.head<3>(), F.tail<3>());
 
