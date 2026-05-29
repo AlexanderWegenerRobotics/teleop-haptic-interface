@@ -11,13 +11,13 @@ avatar:
 
 # ------ Per-arm device entries ------
 devices:
-  - side: left
-    haptic_config: "config/haptic_left.yaml"
-    arm:
-      remote_ip:    "127.0.0.1"
-      send_port:    7001
-      receive_port: 8001
-      frequency:    500
+  #- side: left
+  #  haptic_config: "config/haptic_left.yaml"
+  #  arm:
+  #    remote_ip:    "127.0.0.1"
+  #    send_port:    7001
+  #    receive_port: 8001
+  #    frequency:    500
 
   - side: right
     haptic_config: "config/haptic_right.yaml"

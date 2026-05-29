@@ -69,6 +69,8 @@ TeleopSession::TeleopSession(const std::string& system_config_path) {
     av_cfg.frequency_hz = sys["avatar"]["frequency"].as<int>();
     avatar_channel_ = std::make_unique<AvatarChannel>(av_cfg);
 
+    std::cout << "Loading device with " << av_cfg.remote_ip << std::endl;
+
     for (const auto& dev : sys["devices"]) {
         std::string side       = dev["side"].as<std::string>();
         std::string haptic_cfg = dev["haptic_config"].as<std::string>();
