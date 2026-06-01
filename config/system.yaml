@@ -5,7 +5,7 @@ session:
   mock_profile: keyboard
 
 avatar:
-  remote_ip:    "10.112.24.72"
+  remote_ip:    "10.180.68.34"
   send_port:    7000    # avatar listens here
   receive_port: 8000    # we listen here
   frequency:    20
@@ -23,7 +23,7 @@ devices:
   - side: right
     haptic_config: "config/haptic_right.yaml"
     arm:
-      remote_ip:    "10.112.24.72"  # "127.0.0.1"
+      remote_ip:    "10.180.68.34" # "10.112.24.72"  # "127.0.0.1"
       send_port:    7002
       receive_port: 8002
       frequency:    500
