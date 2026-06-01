@@ -59,10 +59,7 @@ static inline std::string controlLogRow(const ControlLogEntry& e) {
 
 class TeleopController {
 public:
-    TeleopController(std::unique_ptr<IHapticDevice> device,
-                     std::unique_ptr<IArmChannel>   arm,
-                     const YAML::Node& haptic_config,
-                     const std::string& log_dir);
+    TeleopController(std::unique_ptr<IHapticDevice> device, std::unique_ptr<IArmChannel> arm, const YAML::Node& haptic_config, const std::string& log_dir);
     ~TeleopController();
 
     void start();
@@ -72,18 +69,15 @@ public:
     void captureOrigin();
     void setEngaged(bool engaged);
     bool isEngaged() const { return engaged_; }
-
     void restartLogger(const std::string& path);
+    int  pollSessionKey() { return device_->consumeSessionKey(); }
 
 private:
     void runControlLoop();
 
     Eigen::Vector3d toWorld(const Eigen::Vector3d& v_device) const;
     ArmCommand computeCommand(const HapticState& device_state) const;
-    Eigen::Matrix<double,6,1> computeHapticWrench(
-        const HapticState& device_state,
-        const ArmState&    arm_state,
-        double dt);
+    Eigen::Matrix<double,6,1> computeHapticWrench(const HapticState& device_state, const ArmState& arm_state, double dt);
 
     std::unique_ptr<IHapticDevice> device_;
     std::unique_ptr<IArmChannel>   arm_;

@@ -23,8 +23,7 @@ public:
     void close() override {}
 
     HapticState readState() override {
-        double t = std::chrono::duration<double>(
-            std::chrono::high_resolution_clock::now() - start_).count();
+        double t = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - start_).count();
 
         constexpr double W = 0.3141592654;  // 2π × 0.05 Hz — one cycle per 20 s
 

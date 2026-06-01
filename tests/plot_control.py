@@ -34,8 +34,7 @@ def plot_sigma_arm(name, df, fig, gs_row):
 
     ax1 = fig.add_subplot(gs_row[0])
     ax1.plot(t, df["arm_pz"], label="arm_pz", color="#2166ac", lw=1.5)
-    ax1.plot(t, df["dev_pz"] * MOTION_SCALING + df["arm_pz"].iloc[0],
-             label=f"dev_pz × {MOTION_SCALING} (cmd target)", color="#f4a582", lw=1, ls="--")
+    ax1.plot(t, df["dev_pz"] * MOTION_SCALING + df["arm_pz"].iloc[0], label=f"dev_pz x {MOTION_SCALING} (cmd target)", color="#f4a582", lw=1, ls="--")
     ax1.axhline(SAFETY_FLOOR_Z, color="#d73027", lw=0.8, ls=":", label=f"floor {SAFETY_FLOOR_Z} m")
     ax1.set_ylabel("z position [m]")
     ax1.set_title(name)
@@ -113,10 +112,11 @@ def main():
         inner = gridspec.GridSpecFromSubplotSpec(3, 1, subplot_spec=outer[row], hspace=0.15)
         plot_sigma_arm(name, df, fig, inner)
 
-    sigma_out = os.path.join(out_dir, "control_plot.png")
-    plt.savefig(sigma_out, dpi=150, bbox_inches="tight")
-    print(f"Saved → {sigma_out}")
-    plt.close()
+    #sigma_out = os.path.join(out_dir, "control_plot.png")
+    #plt.savefig(sigma_out, dpi=150, bbox_inches="tight")
+    #print(f"Saved -> {sigma_out}")
+    #plt.close()
+    plt.show()
 
     if arm_log_dir:
         arm_logs = load_arm_logs(arm_log_dir)
@@ -132,10 +132,11 @@ def main():
                 inner2 = gridspec.GridSpecFromSubplotSpec(2, 1, subplot_spec=outer2[row], hspace=0.15)
                 plot_avatar_arm(name, df, fig2, inner2)
 
-            arm_out = os.path.join(out_dir, "arm_plot.png")
-            plt.savefig(arm_out, dpi=150, bbox_inches="tight")
-            print(f"Saved → {arm_out}")
-            plt.close()
+            #arm_out = os.path.join(out_dir, "arm_plot.png")
+            #plt.savefig(arm_out, dpi=150, bbox_inches="tight")
+            #print(f"Saved → {arm_out}")
+            #plt.close()
+            plt.show()
 
 
 if __name__ == "__main__":

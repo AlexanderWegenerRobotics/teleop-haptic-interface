@@ -34,4 +34,5 @@ private:
     SysState              state_{SysState::IDLE};
     std::atomic<bool>     running_{false};
     std::string           log_dir_;
+    bool                  keyboard_mode_{false};
 };

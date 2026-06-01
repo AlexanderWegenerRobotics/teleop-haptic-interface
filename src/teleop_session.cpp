@@ -16,6 +16,7 @@
 #else
 #  include "haptic_device.hpp"
 #  include "mock_haptic_device.hpp"
+#  include "keyboard_haptic_device.hpp"
 #endif
 
 #ifndef WITH_SIGMA
@@ -92,11 +93,17 @@ TeleopSession::TeleopSession(const std::string& system_config_path) {
 #else
         if (mock_motion) {
             std::string profile_str = sys["session"]["mock_profile"].as<std::string>("free_x");
-            MockProfile profile = MockProfile::FREE_X;
-            if      (profile_str == "contact_z")      profile = MockProfile::CONTACT_Z;
-            else if (profile_str == "contact_z_down") profile = MockProfile::CONTACT_Z_DOWN;
-            haptic = std::make_unique<MockHapticDevice>(device_id, profile);
-            std::cout << "[TeleopSession] Using MockHapticDevice for " << side << " (profile: " << profile_str << ")\n";
+            if (profile_str == "keyboard") {
+                haptic = std::make_unique<KeyboardHapticDevice>(device_id);
+                keyboard_mode_ = true;
+                std::cout << "[TeleopSession] Using KeyboardHapticDevice for " << side << "\n";
+            } else {
+                MockProfile profile = MockProfile::FREE_X;
+                if      (profile_str == "contact_z")      profile = MockProfile::CONTACT_Z;
+                else if (profile_str == "contact_z_down") profile = MockProfile::CONTACT_Z_DOWN;
+                haptic = std::make_unique<MockHapticDevice>(device_id, profile);
+                std::cout << "[TeleopSession] Using MockHapticDevice for " << side << " (profile: " << profile_str << ")\n";
+            }
         } else {
             haptic = std::make_unique<NullHapticDevice>(device_id);
             std::cout << "[TeleopSession] Using NullHapticDevice for " << side << "\n";
@@ -147,7 +154,15 @@ void TeleopSession::stop() {
 }
 
 void TeleopSession::updateStateMachine() {
-    int key = pollKey();
+    int key = 0;
+    if (!keyboard_mode_) {
+        key = pollKey();
+    } else {
+        for (auto& ctrl : controllers_) {
+            int k = ctrl->pollSessionKey();
+            if (k != 0) { key = k; break; }
+        }
+    }
     SysState remote = avatar_channel_->getRemoteState();
 
     bool avatar_stopped = (remote == SysState::FAULT || remote == SysState::STOP) ||
@@ -171,8 +186,6 @@ void TeleopSession::updateStateMachine() {
             std::cout << "[TeleopSession] HOMING requested — waiting for avatar...\n";
         }
     } else if (state_ == SysState::HOMING) {
-        std::cout << "[TeleopSession] HOMING — remote state: " << sysStateStr(remote)
-                  << " alive=" << avatar_channel_->isAlive() << "\n";
         if (remote == SysState::AWAITING) {
             // Arms have finished homing; capture origins and engage
             for (auto& ctrl : controllers_) ctrl->captureOrigin();

@@ -43,6 +43,7 @@ HapticState SigmaDevice::readState() {
     double px, py, pz;
     double Rm[3][3];
     if (dhdGetPositionAndOrientationFrame(&px, &py, &pz, Rm, device_id_) < 0) {
+        std::cout << "[WARNING]: " << name_ << " not valid anymore" << std::endl;
         s.is_valid = false;
         return s;
     }

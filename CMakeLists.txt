@@ -38,6 +38,7 @@ set(SOURCES
     src/passivity_controller.cpp
     src/teleop_controller.cpp
     src/teleop_session.cpp
+    src/keyboard_haptic_device.cpp
 )
 
 # ─── Sigma 7 (Force Dimension) SDK ────────────────────────────────────────────
