@@ -4,6 +4,7 @@
 
 #include "haptic_device.hpp"
 #include <Eigen/Geometry>
+#include <chrono>
 #include <string>
 
 class SigmaDevice : public IHapticDevice {
@@ -25,6 +26,7 @@ private:
     bool                 force_enabled_  = false;
     std::string          name_;
     Eigen::Quaterniond   prev_orientation_;
+    std::chrono::steady_clock::time_point last_force_error_time_{};
 };
 
 #endif // WITH_SIGMA

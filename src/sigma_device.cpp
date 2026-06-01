@@ -18,18 +18,24 @@ bool SigmaDevice::open() {
         return false;
     }
     connected_ = true;
-
-    // Release brakes; device ready to read but force disabled until enableForce()
-    if(dhdSetBrakes(DHD_OFF, device_id_) < 0){
-        std::cout << "[ERROR]: Failed to release breaks" << std::endl;
-        return;
-    }
-    if(dhdEnableForce(DHD_OFF, device_id_) < 0){
-        std::cout << "[ERROR]: Failed to enable force" << std::endl;
-        return;
-    }
-
     std::cout << "[SigmaDevice:" << device_id_ << "] Opened: " << dhdGetSystemName(device_id_) << "\n";
+
+    if (dhdSetBrakes(DHD_OFF, device_id_) < 0) {
+        std::cerr << "[SigmaDevice:" << device_id_ << "] Failed to release brakes: " << dhdErrorGetLastStr() << "\n";
+        dhdClose(device_id_);
+        connected_ = false;
+        return false;
+    }
+    std::cout << "[SigmaDevice:" << device_id_ << "] Brakes released\n";
+
+    if (dhdEnableForce(DHD_OFF, device_id_) < 0) {
+        std::cerr << "[SigmaDevice:" << device_id_ << "] Failed to disable force motors: " << dhdErrorGetLastStr() << "\n";
+        dhdClose(device_id_);
+        connected_ = false;
+        return false;
+    }
+    std::cout << "[SigmaDevice:" << device_id_ << "] Ready (force disabled until enableForce)\n";
+
     return true;
 }
 
@@ -88,17 +94,31 @@ HapticState SigmaDevice::readState() {
 
 void SigmaDevice::setForce(const Eigen::Vector3d& force, const Eigen::Vector3d& torque) {
     if (!connected_ || !force_enabled_) return;
-    dhdSetForceAndTorqueAndGripperForce(force.x(), force.y(), force.z(), torque.x(), torque.y(), torque.z(), 0.0, device_id_);
+    if (dhdSetForceAndTorqueAndGripperForce(
+            force.x(), force.y(), force.z(),
+            torque.x(), torque.y(), torque.z(),
+            0.0, device_id_) < 0) {
+        // Throttle to once per second — this runs at 1 kHz
+        auto now = std::chrono::steady_clock::now();
+        if (std::chrono::duration<double>(now - last_force_error_time_).count() > 1.0) {
+            std::cerr << "[SigmaDevice:" << device_id_ << "] setForce failed: " << dhdErrorGetLastStr() << "\n";
+            last_force_error_time_ = now;
+        }
+    }
 }
 
 void SigmaDevice::enableForce(bool enable) {
     if (!connected_) return;
     if (enable) {
-        // Always zero before enabling to avoid jumps
         dhdSetForceAndTorqueAndGripperForce(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, device_id_);
-        dhdEnableForce(DHD_ON, device_id_);
+        if (dhdEnableForce(DHD_ON, device_id_) < 0) {
+            std::cerr << "[SigmaDevice:" << device_id_ << "] Failed to enable force: " << dhdErrorGetLastStr() << "\n";
+            return;
+        }
+        std::cout << "[SigmaDevice:" << device_id_ << "] Force enabled\n";
     } else {
-        dhdEnableForce(DHD_OFF, device_id_);
+        if (dhdEnableForce(DHD_OFF, device_id_) < 0)
+            std::cerr << "[SigmaDevice:" << device_id_ << "] Failed to disable force: " << dhdErrorGetLastStr() << "\n";
     }
     force_enabled_ = enable;
 }
