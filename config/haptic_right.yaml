@@ -14,6 +14,13 @@ control:
 passivity:
   max_damping_gain: 50.0
 
+# Pure viscous damping applied in non-engaged state (zero-torque / floating feel).
+# Passive by construction — only dissipates energy. Set 0 to disable.
+# Typical useful range: 2–8 Ns/m linear, 0.01–0.05 Nm·s/rad angular.
+idle_damping:
+  linear:  0.0    # [Ns/m]   — enable for hardware: try 3.0
+  angular: 0.0    # [Nms/rad] — enable for hardware: try 0.02
+
 safety:
   max_force:       12.0
   max_torque:       0.5

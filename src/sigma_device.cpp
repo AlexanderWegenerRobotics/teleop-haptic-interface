@@ -20,8 +20,14 @@ bool SigmaDevice::open() {
     connected_ = true;
 
     // Release brakes; device ready to read but force disabled until enableForce()
-    dhdSetBrakes(DHD_OFF, device_id_);
-    dhdEnableForce(DHD_OFF, device_id_);
+    if(dhdSetBrakes(DHD_OFF, device_id_) < 0){
+        std::cout << "[ERROR]: Failed to release breaks" << std::endl;
+        return;
+    }
+    if(dhdEnableForce(DHD_OFF, device_id_) < 0){
+        std::cout << "[ERROR]: Failed to enable force" << std::endl;
+        return;
+    }
 
     std::cout << "[SigmaDevice:" << device_id_ << "] Opened: " << dhdGetSystemName(device_id_) << "\n";
     return true;

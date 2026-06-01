@@ -30,6 +30,9 @@ TeleopController::TeleopController(std::unique_ptr<IHapticDevice> device, std::u
     max_force_rate_  = cfg["safety"]["max_force_rate"].as<double>(500.0);
     max_torque_rate_ = cfg["safety"]["max_torque_rate"].as<double>(20.0);
 
+    idle_damping_linear_  = cfg["idle_damping"]["linear"].as<double>(0.0);
+    idle_damping_angular_ = cfg["idle_damping"]["angular"].as<double>(0.0);
+
     double max_b = cfg["passivity"]["max_damping_gain"].as<double>(50.0);
     passivity_.setMaxDampingGain(max_b);
 
@@ -113,11 +116,7 @@ ArmCommand TeleopController::computeCommand(const HapticState& state) const {
     return cmd;
 }
 
-Eigen::Matrix<double,6,1> TeleopController::computeHapticWrench(
-    const HapticState& device_state,
-    const ArmState&    arm_state,
-    double dt)
-{
+Eigen::Matrix<double,6,1> TeleopController::computeHapticWrench(const HapticState& device_state, const ArmState& arm_state, double dt) {
     // Position error: (arm movement from origin) − (device movement from origin × scale)
     Eigen::Vector3d delta_arm    = arm_state.position - arm_origin_pos_;
     Eigen::Vector3d delta_dev    = toWorld(device_state.position - origin_.position) * motion_scaling_;
@@ -127,7 +126,6 @@ Eigen::Matrix<double,6,1> TeleopController::computeHapticWrench(
     Eigen::Quaterniond q_dev_delta = origin_.orientation.inverse() * device_state.orientation;
     if (q_dev_delta.w() < 0.0) q_dev_delta.coeffs() *= -1.0;
     Eigen::Quaterniond R_dw(R_device_to_world_);
-    //Eigen::Quaterniond q_cmd_world = (arm_origin_ori_ * R_dw * q_dev_delta * R_dw.inverse()).normalized();
     Eigen::Quaterniond q_cmd = (R_dw * q_dev_delta * R_dw.inverse()).normalized();
     Eigen::Quaterniond q_cmd_world = (q_cmd * arm_origin_ori_).normalized();
     if (q_cmd_world.dot(arm_state.orientation) < 0.0) q_cmd_world.coeffs() *= -1.0;
@@ -144,8 +142,7 @@ Eigen::Matrix<double,6,1> TeleopController::computeHapticWrench(
     twist_world.head<3>() = toWorld(device_state.twist.head<3>());
     twist_world.tail<3>() = toWorld(device_state.twist.tail<3>());
 
-    Eigen::Matrix<double,6,1> F_imp_world =
-        stiffness_.cwiseProduct(error) - damping_.cwiseProduct(twist_world);
+    Eigen::Matrix<double,6,1> F_imp_world = stiffness_.cwiseProduct(error) - damping_.cwiseProduct(twist_world);
 
     // Rotate impedance force back to device frame for rendering and passivity
     Eigen::Matrix<double,6,1> F_device;
@@ -194,13 +191,10 @@ void TeleopController::runControlLoop() {
         if (engaged_ && has_origin_) {
             arm_->sendCommand(computeCommand(dev));
 
-            //std::cout << "Arm pos: " << dev.position.transpose() << std::endl;
-
             ArmState arm = arm_->getState();
             Eigen::Matrix<double,6,1> F = Eigen::Matrix<double,6,1>::Zero();
             if (arm.is_valid)
                 F = computeHapticWrench(dev, arm, dt);
-                //std::cout << "Arm is valid with force " << F.transpose() << std::endl;
 
             device_->setForce(F.head<3>(), F.tail<3>());
 
@@ -230,7 +224,13 @@ void TeleopController::runControlLoop() {
             entry.sys_state     = 4u;
             logger_.write(entry);
         } else {
-            device_->zero();
+            if (idle_damping_linear_ > 0.0 || idle_damping_angular_ > 0.0) {
+                Eigen::Vector3d F_idle = -idle_damping_linear_  * dev.twist.head<3>();
+                Eigen::Vector3d T_idle = -idle_damping_angular_ * dev.twist.tail<3>();
+                device_->setForce(F_idle, T_idle);
+            } else {
+                device_->zero();
+            }
         }
 
         next += period;

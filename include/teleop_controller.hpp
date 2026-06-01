@@ -88,6 +88,8 @@ private:
     Eigen::Matrix<double,6,1> stiffness_;
     Eigen::Matrix<double,6,1> damping_;
     double max_force_, max_torque_, max_force_rate_, max_torque_rate_;
+    double idle_damping_linear_  = 0.0;
+    double idle_damping_angular_ = 0.0;
 
     // Origin — haptic device pose and arm pose at capture time
     std::mutex         origin_mtx_;
